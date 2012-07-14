@@ -15,8 +15,10 @@ REGEX_HEIGHT	= Regex('height=[0-9]+')
 REGEX_RTMP		= re.compile('^(?P<rtmp>rtmp.*)(?P<clip>mp4:.*)\.mp4$', re.I)
 
 def Start():
+	Dict.Reset()
 	HTTP.CacheTime = CACHE_1HOUR
 	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20100101 Firefox/12.0'
+	HTTP.ClearCookies()
 
 @handler(PREFIX, TITLE)
 def MainMenu():
@@ -61,7 +63,19 @@ def HRTVLogin():
 	
 	if (username != None) and (password != None):
 		authentication_url = "https://www.hrtv.com/members/login/"
+		resp = HTTP.Request(authentication_url, cacheTime=0).content
+		
+		current_session = ''
+		for item in HTTP.CookiesForURL('https://www.hrtv.com/').split(';'):
+				if 'ASP.NET_SessionId' in item:
+					current_session = item
+		Log("current_session = " + current_session)
+		
+		if (Dict['ASP.NET_SessionId'] != None) and (Dict['ASP.NET_SessionId'] == current_session):
+			Log('Dict["ASP.NET_SessionId"] = ' + Dict['ASP.NET_SessionId'])
+			return True
 
+		HTTP.ClearCookies()
 		resp = HTTP.Request(authentication_url, cacheTime=0).content
 		html = HTML.ElementFromString(resp)
 		event_validation = html.xpath('//input[@name="__EVENTVALIDATION"]/@value')[0]
@@ -89,7 +103,9 @@ def HRTVLogin():
 		if (len(errors) > 0):
 			return False
 		else:
-			HTTP.Headers['Cookie'] = HTTP.CookiesForURL('https://www.hrtv.com/')
+			for item in HTTP.CookiesForURL('https://www.hrtv.com/').split(';'):
+				if 'ASP.NET_SessionId' in item:
+					Dict['ASP.NET_SessionId'] = item
 			return True
 	else:
 		return False
@@ -100,6 +116,7 @@ def VideoVault(query='', page = 1):
 	
 	post_data = dict(SiteId=1, pg=page, searchTerms=query)
 	json_data = HTTP.Request(VIDEO_FEED, post_data, cacheTime=0).content
+	Log("json_data = " + json_data)
 
 	if (json_data == None) or (json_data == ''):
 		return ObjectContainer(header = "No results", message = "No results were found.")
@@ -127,6 +144,9 @@ def VideoVault(query='', page = 1):
 		src = xml.xpath('//src/text()')[0].strip()
 		
 		match = REGEX_RTMP.match(src)
+		if (match == None) or (match.group('rtmp') == None) or (match.group('clip') == None):
+			continue
+		
 		rtmp = match.group('rtmp')
 		Log("rtmp = " + rtmp)
 		clip = match.group('clip')
@@ -153,6 +173,13 @@ def VideoVault(query='', page = 1):
 			]
 		))
 
+	oc.add(InputDirectoryObject(
+		key = Callback(VideoVault),
+		title = "Search",
+		thumb = R(ICON_SEARCH),
+		prompt = "Search Video Vault"
+	))
+		
 	if page < json["totalPages"]:
 		oc.add(DirectoryObject(
 			key = Callback(VideoVault, query = query, page = page + 1),
@@ -161,3 +188,7 @@ def VideoVault(query='', page = 1):
 		))
 
 	return oc
+	
+def ValidatePrefs():
+	Dict.Reset()
+	HTTP.ClearCookies()
