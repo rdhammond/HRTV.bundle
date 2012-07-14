@@ -20,13 +20,9 @@ def Start():
 	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20100101 Firefox/12.0'
 	HTTP.ClearCookies()
 
-@handler(PREFIX, TITLE)
+@handler(PREFIX, TITLE, thumb = ICON_DEFAULT, art = ART)
 def MainMenu():
-	oc = ObjectContainer(
-		title1 = TITLE,
-		art = R(ART)
-	)
-	
+	oc = ObjectContainer()
 	oc.add(DirectoryObject(key = Callback(LiveStream), title = "Live Stream", thumb = R(ICON_DEFAULT)))
 	oc.add(DirectoryObject(key = Callback(VideoVault), title = "Video Vault", thumb = R(ICON_DEFAULT)))
 	oc.add(PrefsObject(title = "Preferences", thumb = R(ICON_PREFS)))
