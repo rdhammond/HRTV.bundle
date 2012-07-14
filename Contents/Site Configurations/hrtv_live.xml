@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site site="http://stream.robertsstream.com/streamflash.php.*"
+	plugin="./flash/rcnplayer.*\.swf.*"
+    initialState="playing"
+    version="1.0">
+
+	<state name="playing">
+		<event>
+			<condition>
+				<command name="pause" />
+			</condition>
+			<action>
+				<click x="20" y="700" />
+				<goto state="paused" />
+			</action>
+		</event>
+	</state>
+
+	<state name="paused">
+		<event>
+			<condition>
+				<command name="play" />
+			</condition>
+			<action>
+				<click x="20" y="700" />
+				<goto state="playing" />
+			</action>
+		</event>
+	</state>
+</site>
